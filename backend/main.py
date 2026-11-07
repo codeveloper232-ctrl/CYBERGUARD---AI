@@ -395,30 +395,37 @@ async def global_exception_handler(request: Request, exc: Exception):
 # ============================================================
 # ROUTER REGISTRATION
 # ============================================================
+# ------------------------------------------------------------
+# Routers already declare their own sub-prefixes:
+#   auth.py    → APIRouter(prefix="/auth")
+#   scan.py    → APIRouter(prefix="/scan")
+#   history.py → APIRouter(prefix="/history")
+#
+# So main.py must ONLY prepend the environment-level namespace
+# (API_PREFIX) — never repeat /auth, /scan or /history here.
+#
+#   API_PREFIX=""       → /auth/login, /scan/url, /history
+#   API_PREFIX="/api/v1" → /api/v1/auth/login, /api/v1/scan/url
+# ------------------------------------------------------------
+API_PREFIX = str(getattr(settings, "API_PREFIX", "") or "").rstrip("/")
 
-API_PREFIX = str(getattr(settings, "API_PREFIX", "")).rstrip("/")
-
-# Auth endpoints — always at /auth
 app.include_router(
     auth_router,
-    prefix=f"{API_PREFIX}/auth" if API_PREFIX else "/auth",
+    prefix=API_PREFIX,
     tags=["Authentication"],
 )
 
-# Scan endpoints — always at /scan
 app.include_router(
     scan_router,
-    prefix=f"{API_PREFIX}/scan" if API_PREFIX else "/scan",
+    prefix=API_PREFIX,
     tags=["Scanning"],
 )
 
-# History endpoints — always at /history
 app.include_router(
     history_router,
-    prefix=f"{API_PREFIX}/history" if API_PREFIX else "/history",
+    prefix=API_PREFIX,
     tags=["History"],
 )
-
 
 # ============================================================
 # ROOT ENDPOINT
