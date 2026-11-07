@@ -469,7 +469,20 @@
         <div class="profile-status"><span class="live-dot"></span>Authentication active</div>
     </div>
 </div>
+<!-- For local dev with backend on port 8000:
+     remove this <script> block in production / Render.
+     Same-origin deploys resolve API base from window.location.origin. -->
+<script>
+    if (
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1" ||
+        window.location.protocol === "file:"
+    ) {
+        window.CYBERGUARD_API_BASE = "http://127.0.0.1:8000";
+    }
+</script>
 
 <script src="script.js"></script>
 </body>
 </html>
+
