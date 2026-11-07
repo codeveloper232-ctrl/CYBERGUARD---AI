@@ -40,7 +40,7 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: CORS_ORIGINS
-        value: "*"
+  value: "https://YOUR-FRONTEND.onrender.com"
       - key: VIRUSTOTAL_API_KEY
         sync: false
       - key: DATABASE_URL
