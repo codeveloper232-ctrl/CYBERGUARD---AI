@@ -35,32 +35,40 @@
 /* ============================================================
    01. CONFIGURATION
    ============================================================ */
-
 const CONFIG = Object.freeze({
+    // --------------------------------------------------------
+    // API base URL resolution (in order):
+    //   1. window.CYBERGUARD_API_BASE  — set manually for split deploy
+    //   2. window.location.origin      — same-origin deploy (recommended)
+    //
+    // For local dev with the backend on a different port, put this
+    // BEFORE <script src="script.js"></script> in index.html:
+    //
+    //   <script>
+    //       window.CYBERGUARD_API_BASE = "http://127.0.0.1:8000";
+    //   </script>
+    //
+    // For Render / same-origin deploys, no override is needed.
+    // --------------------------------------------------------
     BACKEND_API:
-      BACKEND_API: "http://127.0.0.1:8000",  
+        (window.CYBERGUARD_API_BASE || window.location.origin || "")
+            .replace(/\/+$/, ""),
 
     HEALTH_TIMEOUT_MS: 8000,
-
     REQUEST_TIMEOUT_MS: 30000,
-
     HISTORY_STORAGE_KEY:
         "cyberguard_x_scan_history_v1",
-
     MAX_HISTORY_ITEMS: 40,
-
     MAX_LOCAL_PREVIEW_LENGTH: 110,
-
     MAX_INPUT_LENGTH: 20000,
-
     MAX_QR_FILE_SIZE: 8 * 1024 * 1024,
-
     ALLOWED_QR_TYPES: [
         "image/png",
         "image/jpeg",
         "image/webp"
     ]
 });
+
 
 
 /* ============================================================
