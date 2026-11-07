@@ -34,7 +34,7 @@ services:
       - key: HOST
         value: "0.0.0.0"
       - key: API_PREFIX
-        value: ""
+      value: ""
       - key: LOG_LEVEL
         value: INFO
       - key: SECRET_KEY
