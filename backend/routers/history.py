@@ -502,3 +502,127 @@ if __name__ == "__main__":
         print("=" * 60)
 
     asyncio.run(test())
+# ============================================================
+# FASTAPI ROUTER
+# ============================================================
+# main.py does:
+#     from backend.routers.history import router as history_router
+#
+# This section wires HistoryService into FastAPI.
+# Route ORDER matters: /summary must come before /{scan_id},
+# otherwise "/summary" gets captured as scan_id="summary".
+# ============================================================
+
+from fastapi import APIRouter, HTTPException, Query
+
+router = APIRouter(
+    prefix="/history",
+    tags=["History"],
+)
+
+
+# ------------------------------------------------------------
+# GET /history  — list paginated history
+# ------------------------------------------------------------
+@router.get(
+    "",
+    summary="List scan history",
+    description="Returns paginated scan history, newest first.",
+)
+async def list_history_endpoint(
+    page: int = Query(1, ge=1, description="Page number (1-based)."),
+    page_size: int = Query(
+        20, ge=1, le=MAX_PAGE_SIZE, description="Items per page."
+    ),
+    scan_type: Optional[str] = Query(
+        None, description="Filter by scan type (url, text, qr)."
+    ),
+    severity: Optional[str] = Query(
+        None, description="Filter by severity (LOW/MEDIUM/HIGH/CRITICAL)."
+    ),
+    search: Optional[str] = Query(
+        None, description="Search scan_id, domain, or URL."
+    ),
+) -> dict[str, Any]:
+    service = get_history_service()
+
+    try:
+        return await service.list_history(
+            page=page,
+            page_size=page_size,
+            scan_type=scan_type,
+            severity=severity,
+            search=search,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+# ------------------------------------------------------------
+# GET /history/summary  — statistics
+# MUST be declared BEFORE /{scan_id}
+# ------------------------------------------------------------
+@router.get(
+    "/summary",
+    summary="Scan history statistics",
+    description="Aggregate counts: total, by severity, by type, average risk.",
+)
+async def history_summary_endpoint() -> dict[str, Any]:
+    service = get_history_service()
+
+    try:
+        return await service.get_summary()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+# ------------------------------------------------------------
+# GET /history/{scan_id}  — retrieve one scan
+# ------------------------------------------------------------
+@router.get(
+    "/{scan_id}",
+    summary="Retrieve one scan by ID",
+)
+async def get_scan_endpoint(scan_id: str) -> dict[str, Any]:
+    service = get_history_service()
+
+    try:
+        record = await service.get_by_scan_id(scan_id)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    if record is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Scan '{scan_id}' not found.",
+        )
+
+    return record
+
+
+# ------------------------------------------------------------
+# DELETE /history/{scan_id}  — delete one scan
+# ------------------------------------------------------------
+@router.delete(
+    "/{scan_id}",
+    summary="Delete one scan by ID",
+)
+async def delete_scan_endpoint(scan_id: str) -> dict[str, Any]:
+    service = get_history_service()
+
+    try:
+        deleted = await service.delete_by_scan_id(scan_id)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    if not deleted:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Scan '{scan_id}' not found.",
+        )
+
+    return {
+        "status": "success",
+        "deleted": True,
+        "scan_id": scan_id,
+    }
